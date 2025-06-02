@@ -7,12 +7,7 @@
       <button @click="login">Login</button>
     </div>
     <div v-else class="color-buttons">
-      <ColorButton
-        v-for="(color, index) in colors"
-        :key="index"
-        :color="color"
-        @change-color="setBackgroundColor"
-      >
+      <ColorButton v-for="(color, index) in colors" :key="index" :color="color" @change-color="setBackgroundColor">
         Change to {{ color }}
       </ColorButton>
     </div>
@@ -39,22 +34,26 @@ export default {
   methods: {
     async login() {
       try {
-        const usersRef = collection(db, 'users');
-        const q = query(
-          usersRef,
-          where('username', '==', this.username),
-          where('password', '==', this.password)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          alert('Login successful!');
+
+        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+        const response = await fetch(`${apiBase}/api/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: this.username,
+            password: this.password,
+          }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert(data.message);
           this.isLoggedIn = true;
         } else {
-          alert('Incorrect username or password.');
+          alert(data.message);
         }
       } catch (error) {
         console.error(error);
-        alert('Error connecting to Firebase.');
+        alert('Error connecting to server.');
       }
     },
     setBackgroundColor(color) {
@@ -72,6 +71,7 @@ export default {
   flex-direction: column;
   gap: 2rem;
 }
+
 .login-form {
   display: flex;
   flex-direction: column;
@@ -81,11 +81,13 @@ export default {
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
+
 .login-form h2 {
   margin-bottom: 1rem;
   text-align: center;
   color: #333;
 }
+
 .login-form input {
   margin: 10px 0;
   padding: 12px;
@@ -94,11 +96,13 @@ export default {
   font-size: 16px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
+
 .login-form input:focus {
   outline: none;
   border-color: #4a90e2;
   box-shadow: 0 0 8px rgba(74, 144, 226, 0.2);
 }
+
 .login-form button {
   margin-top: 1rem;
   padding: 12px;
@@ -110,9 +114,11 @@ export default {
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
+
 .login-form button:hover {
   background-color: #357abd;
 }
+
 .color-buttons {
   display: flex;
   flex-direction: column;
