@@ -24,6 +24,22 @@
 
 <script>
 import ColorButton from './components/ColorButton.vue';
+import { useToast } from 'vue-toastification';
+const toast = useToast();
+const toastOptions = {
+  position: 'top-right',
+  timeout: 3000,
+  closeOnClick: true,
+  pauseOnFocusLoss: true,
+  pauseOnHover: true,
+  draggable: true,
+  draggablePercent: 0.6,
+  showCloseButtonOnHover: false,
+  hideProgressBar: true,
+  closeButton: "button",
+  icon: true,
+  rtl: false,
+};
 export default {
   name: 'App',
   components: {
@@ -34,6 +50,7 @@ export default {
       username: '',
       password: '',
       isLoggedIn: false,
+      backgroundColor: 'Black',
       colors: ['Black', 'Red', 'Blue', 'Green', 'Purple', 'Orange', 'White'],
     };
   },
@@ -51,23 +68,25 @@ export default {
         });
         const data = await response.json();
         if (data.success) {
-          alert(data.message);
+          toast.success(data.message || 'Login successful!', toastOptions);
           this.isLoggedIn = true;
         } else {
-          alert(data.message);
+          toast.error(data.message || 'Login failed. Please try again.', toastOptions);
         }
       } catch (error) {
         console.error(error);
-        alert('Error connecting to server.');
+        toast.error(`Error connecting to server.`, toastOptions);
       }
     },
     setBackgroundColor(color) {
       document.body.style.backgroundColor = color;
+      toast(`Switching background to ${color}`, toastOptions);
     },
     confirmLogout() {
       if (confirm('Are you sure you want to logout?')) {
         this.logout();
       }
+      toast.error('Logout cancelled.', toastOptions);
     },
     async logout() {
       try {
@@ -77,17 +96,17 @@ export default {
         });
         const data = await response.json();
         if (data.success) {
-          alert(data.message || 'Logged out successfully!');
+          toast.success(data.message || 'Logged out successfully!', toastOptions);
           this.isLoggedIn = false;
           this.username = '';
           this.password = '';
-          document.body.style.backgroundColor = '';
+          document.body.style.backgroundColor = 'Black';
         } else {
-          alert(data.message || 'Logout failed. Please try again.');
+          toast.error(data.message || 'Logout failed. Please try again.', toastOptions);
         }
       } catch (error) {
         console.error(error);
-        alert('Error connecting to server.');
+        toast.error('Error connecting to server.', toastOptions);
       }
     },
   },
