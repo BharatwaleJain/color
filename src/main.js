@@ -5,11 +5,13 @@ import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
 import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import router from './router';
 const app = createApp(App);
 app.use(Toast, {
   transition: 'Vue-Toastification__bounce',
-  maxToasts: 5,
+  maxToasts: 3,
   newestOnTop: true,
 });
 app.use(VueSweetalert2);
+app.use(router);
 app.mount('#app');

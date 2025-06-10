@@ -6,25 +6,22 @@
       <input v-model="password" type="password" placeholder="Password" />
       <button @click="login">Login</button>
     </div>
-    <div v-else class="color-buttons">
+    <div v-else class="router-container">
       <div class="logout-container">
         <button class="logout-button" @click="confirmLogout">Logout</button>
       </div>
-      <ColorButton
-        v-for="(color, index) in colors"
-        :key="index"
-        :color="color"
-        @change-color="setBackgroundColor"
-      >
-        Change to {{ color }}
-      </ColorButton>
+      <router-view></router-view>
     </div>
   </div>
 </template>
 
-<script>
-import ColorButton from './components/ColorButton.vue';
+<script setup>
+import { ref, onMounted } from 'vue';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+const router = useRouter();
 const toast = useToast();
 const toastOptions = {
   position: 'top-right',
@@ -40,119 +37,105 @@ const toastOptions = {
   icon: true,
   rtl: false,
 };
-export default {
-  name: 'App',
-  components: {
-    ColorButton,
-  },
-  data() {
-    return {
-      username: '',
-      password: '',
-      isLoggedIn: false,
-      backgroundColor: 'Black',
-      colors: ['Black', 'Red', 'Blue', 'Green', 'Purple', 'Orange', 'White'],
-    };
-  },
-  created() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      this.isLoggedIn = false;
-      return;
-    }
+const username = ref('');
+const password = ref('');
+const isLoggedIn = ref(false);
+onMounted(() => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    isLoggedIn.value = false;
+    router.push('/');
+    return;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+  fetch(`${apiBase}/api/check`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        toast.success('Session Valid!', toastOptions);
+        isLoggedIn.value = true;
+      } else {
+        toast.error('Session Expired!', toastOptions);
+        localStorage.removeItem('token');
+        router.push('/');
+      }
+    })
+    .catch(() => {
+      toast.error('Error Verifying Session', toastOptions);
+    });
+});
+async function login() {
+  try {
     const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-    fetch(`${apiBase}/api/check`, {
+    const response = await fetch(`${apiBase}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          toast.success('Session Valid!', toastOptions);
-          this.isLoggedIn = true;
-        } else {
-          toast.error('Session Expired!', toastOptions);
-          localStorage.removeItem('token');
-        }
-      })
-      .catch(err => {
-        toast.error('Error Verifying Session', toastOptions);
-      });
-  },
-  methods: {
-    async login() {
-      try {
-        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-        const response = await fetch(`${apiBase}/api/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: this.username,
-            password: this.password,
-          }),
-        });
-        const data = await response.json();
-        console.log(`User ${this.username} attempted to login.`);
-        if (data.success) {
-          toast.success(data.message || 'Login Successful!', toastOptions);
-          this.isLoggedIn = true;
-          localStorage.setItem('token', data.token);
-        } else {
-          toast.error(data.message || 'Login Failed, Please Try Again!', toastOptions);
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error(`Error Connecting to Server.`, toastOptions);
-      }
-    },
-    setBackgroundColor(color) {
-      document.body.style.backgroundColor = color;
-      toast(`Switching background to ${color}`, toastOptions);
-    },
-    confirmLogout() {
-      this.$swal({
-        title: '',
-        text: 'Are you sure you want to logout?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, logout',
-        cancelButtonText: 'No, cancel',
-        reverseButtons: true,
-        confirmButtonColor: '#41b882',
-        cancelButtonColor: '#ff7674',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.logout();
-        } else if (result.dismiss === this.$swal.DismissReason.cancel) {
-          toast.error('Logout cancelled.', toastOptions);
-        }
-      });
-    },
-    async logout() {
-      try {
-        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-        const response = await fetch(`${apiBase}/api/logout`, {
-          method: 'POST',
-        });
-        const data = await response.json();
-        if (data.success) {
-          toast.success(data.message || 'Logged Out Successfully!', toastOptions);
-          this.isLoggedIn = false;
-          this.username = '';
-          this.password = '';
-          document.body.style.backgroundColor = 'Black';
-          localStorage.removeItem('token');
-        } else {
-          toast.error(data.message || 'Logout Failed, Please Try Again!', toastOptions);
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error('Error connecting to server.', toastOptions);
-      }
-    },
-  },
-};
+      body: JSON.stringify({
+        username: username.value,
+        password: password.value,
+      }),
+    });
+    const data = await response.json();
+    console.log(`User ${username.value} attempted to login.`);
+    if (data.success) {
+      toast.success(data.message || 'Login Successful!', toastOptions);
+      isLoggedIn.value = true;
+      localStorage.setItem('token', data.token);
+      router.push('/dashboard');
+    } else {
+      toast.error(data.message || 'Login Failed, Please Try Again!', toastOptions);
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error(`Error Connecting to Server.`, toastOptions);
+  }
+}
+function confirmLogout() {
+  Swal.fire({
+    title: '',
+    text: 'Are you sure you want to logout?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, logout',
+    cancelButtonText: 'No, cancel',
+    reverseButtons: true,
+    confirmButtonColor: '#41b882',
+    cancelButtonColor: '#ff7674',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      logout();
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      toast.error('Logout cancelled.', toastOptions);
+    }
+  });
+}
+async function logout() {
+  try {
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+    const response = await fetch(`${apiBase}/api/logout`, {
+      method: 'POST',
+    });
+    const data = await response.json();
+    if (data.success) {
+      toast.success(data.message || 'Logged Out Successfully!', toastOptions);
+      isLoggedIn.value = false;
+      username.value = '';
+      password.value = '';
+      document.body.style.backgroundColor = 'Black';
+      localStorage.removeItem('token');
+      router.push('/');
+    } else {
+      toast.error(data.message || 'Logout Failed, Please Try Again!', toastOptions);
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error('Error connecting to server.', toastOptions);
+  }
+}
 </script>
 
 <style scoped>
@@ -204,10 +187,10 @@ export default {
 .login-form button:hover {
   background-color: #357abd;
 }
-.color-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: .6rem;
+.router-container {
+  height: 100vh;
+  padding: 1rem;
+  justify-content: center;
 }
 .logout-container {
   display: flex;
@@ -223,6 +206,7 @@ export default {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  margin-bottom: 1rem;
 }
 .logout-button:hover {
   background-color: #c0392b;
