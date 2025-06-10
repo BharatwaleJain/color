@@ -83,10 +83,23 @@ export default {
       toast(`Switching background to ${color}`, toastOptions);
     },
     confirmLogout() {
-      if (confirm('Are you sure you want to logout?')) {
-        this.logout();
-      }
-      toast.error('Logout cancelled.', toastOptions);
+      this.$swal({
+        title: '',
+        text: 'Are you sure you want to logout?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, logout',
+        cancelButtonText: 'No, cancel',
+        reverseButtons: true,
+        confirmButtonColor: '#41b882',
+        cancelButtonColor: '#ff7674',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.logout();
+        } else if (result.dismiss === this.$swal.DismissReason.cancel) {
+          toast.error('Logout cancelled.', toastOptions);
+        }
+      });
     },
     async logout() {
       try {

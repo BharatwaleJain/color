@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "firebase": "^11.8.1",
+    "sweetalert2": "^11.22.0",
     "vue": "^3.5.13",
+    "vue-sweetalert2": "^5.0.11",
     "vue-toastification": "^2.0.0-rc.5"
   },
   "devDependencies": {
