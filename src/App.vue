@@ -54,6 +54,32 @@ export default {
       colors: ['Black', 'Red', 'Blue', 'Green', 'Purple', 'Orange', 'White'],
     };
   },
+  created() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      this.isLoggedIn = false;
+      return;
+    }
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+    fetch(`${apiBase}/api/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          toast.success('Session Valid!', toastOptions);
+          this.isLoggedIn = true;
+        } else {
+          toast.error('Session Expired!', toastOptions);
+          localStorage.removeItem('token');
+        }
+      })
+      .catch(err => {
+        toast.error('Error Verifying Session', toastOptions);
+      });
+  },
   methods: {
     async login() {
       try {
@@ -67,15 +93,17 @@ export default {
           }),
         });
         const data = await response.json();
+        console.log(`User ${this.username} attempted to login.`);
         if (data.success) {
-          toast.success(data.message || 'Login successful!', toastOptions);
+          toast.success(data.message || 'Login Successful!', toastOptions);
           this.isLoggedIn = true;
+          localStorage.setItem('token', data.token);
         } else {
-          toast.error(data.message || 'Login failed. Please try again.', toastOptions);
+          toast.error(data.message || 'Login Failed, Please Try Again!', toastOptions);
         }
       } catch (error) {
         console.error(error);
-        toast.error(`Error connecting to server.`, toastOptions);
+        toast.error(`Error Connecting to Server.`, toastOptions);
       }
     },
     setBackgroundColor(color) {
@@ -109,13 +137,14 @@ export default {
         });
         const data = await response.json();
         if (data.success) {
-          toast.success(data.message || 'Logged out successfully!', toastOptions);
+          toast.success(data.message || 'Logged Out Successfully!', toastOptions);
           this.isLoggedIn = false;
           this.username = '';
           this.password = '';
           document.body.style.backgroundColor = 'Black';
+          localStorage.removeItem('token');
         } else {
-          toast.error(data.message || 'Logout failed. Please try again.', toastOptions);
+          toast.error(data.message || 'Logout Failed, Please Try Again!', toastOptions);
         }
       } catch (error) {
         console.error(error);
