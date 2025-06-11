@@ -4,7 +4,7 @@ import cors from 'cors';
 import login from './login.js';
 import logout from './logout.js';
 import check from './check.js';
-import getList from './getItem.js';
+import getList from './getList.js';
 import addItem from './addItem.js';
 import updateItem from './updateItem.js';
 import deleteItem from './deleteItem.js';
