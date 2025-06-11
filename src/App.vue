@@ -7,9 +7,9 @@
       <button @click="login">Login</button>
     </div>
     <div v-else class="router-container">
-      <div class="logout-container">
+      <!-- <div class="logout-container">
         <button class="logout-button" @click="confirmLogout">Logout</button>
-      </div>
+      </div> -->
       <router-view></router-view>
     </div>
   </div>
@@ -56,7 +56,7 @@ onMounted(() => {
     .then(res => res.json())
     .then(data => {
       if (data.success) {
-        toast.success('Session Valid!', toastOptions);
+        toast.success('Session Authenticated!', toastOptions);
         isLoggedIn.value = true;
       } else {
         toast.error('Session Expired!', toastOptions);
