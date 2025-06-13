@@ -1,15 +1,41 @@
 <template>
   <div class="app">
-    <div v-if="!isLoggedIn" class="login-form">
-      <h2>Login</h2>
-      <input v-model="username" type="text" placeholder="Username" />
-      <input v-model="password" type="password" placeholder="Password" />
-      <button @click="login">Login</button>
+    <div v-if="!isLoggedIn" class="login-container">
+      <div class="login-form">
+        <div class="login-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in to your account</p>
+        </div>
+        <div class="form-group">
+          <div class="input-container">
+            <input 
+              v-model="username" 
+              type="text" 
+              placeholder="Username" 
+              class="form-input"
+              required
+            />
+            <div class="input-line"></div>
+          </div>
+          
+          <div class="input-container">
+            <input 
+              v-model="password" 
+              type="password" 
+              placeholder="Password" 
+              class="form-input"
+              required
+            />
+            <div class="input-line"></div>
+          </div>
+        </div>
+        <button @click="login" class="login-btn">
+          <span>Sign In</span>
+          <div class="btn-ripple"></div>
+        </button>
+      </div>
     </div>
     <div v-else class="router-container">
-      <!-- <div class="logout-container">
-        <button class="logout-button" @click="confirmLogout">Logout</button>
-      </div> -->
       <router-view></router-view>
     </div>
   </div>
@@ -92,48 +118,6 @@ async function login() {
   } catch (error) {
     console.error(error);
     toast.error(`Error Connecting to Server.`, toastOptions);
-  }
-}
-function confirmLogout() {
-  Swal.fire({
-    title: '',
-    text: 'Are you sure you want to logout?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, logout',
-    cancelButtonText: 'No, cancel',
-    reverseButtons: true,
-    confirmButtonColor: '#41b882',
-    cancelButtonColor: '#ff7674',
-  }).then((result) => {
-    if (result.isConfirmed) {
-      logout();
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      toast.error('Logout cancelled.', toastOptions);
-    }
-  });
-}
-async function logout() {
-  try {
-    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-    const response = await fetch(`${apiBase}/api/logout`, {
-      method: 'POST',
-    });
-    const data = await response.json();
-    if (data.success) {
-      toast.success(data.message || 'Logged Out Successfully!', toastOptions);
-      isLoggedIn.value = false;
-      username.value = '';
-      password.value = '';
-      document.body.style.backgroundColor = 'Black';
-      localStorage.removeItem('token');
-      router.push('/');
-    } else {
-      toast.error(data.message || 'Logout Failed, Please Try Again!', toastOptions);
-    }
-  } catch (error) {
-    console.error(error);
-    toast.error('Error connecting to server.', toastOptions);
   }
 }
 </script>
