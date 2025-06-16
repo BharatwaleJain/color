@@ -74,7 +74,7 @@ onMounted(() => {
     return;
   }
   const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-  fetch(`${apiBase}/api/check`, {
+  fetch(`${apiBase}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),
@@ -82,10 +82,10 @@ onMounted(() => {
     .then(res => res.json())
     .then(data => {
       if (data.success) {
-        toast.success('Session Authenticated!', toastOptions);
+        toast.success(data.message, toastOptions);
         isLoggedIn.value = true;
       } else {
-        toast.error('Session Expired!', toastOptions);
+        toast.error(data.message, toastOptions);
         localStorage.removeItem('token');
         router.push('/');
       }
@@ -97,7 +97,7 @@ onMounted(() => {
 async function login() {
   try {
     const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-    const response = await fetch(`${apiBase}/api/login`, {
+    const response = await fetch(`${apiBase}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -108,16 +108,16 @@ async function login() {
     const data = await response.json();
     console.log(`User ${username.value} attempted to login.`);
     if (data.success) {
-      toast.success(data.message || 'Login Successful!', toastOptions);
+      toast.success(data.message, toastOptions);
       isLoggedIn.value = true;
       localStorage.setItem('token', data.token);
       router.push('/dashboard');
     } else {
-      toast.error(data.message || 'Login Failed, Please Try Again!', toastOptions);
+      toast.error(data.message, toastOptions);
     }
   } catch (error) {
-    console.error(error);
-    toast.error(`Error Connecting to Server.`, toastOptions);
+    console.log(error);
+    toast.error('Error Connecting to Server', toastOptions);
   }
 }
 </script>

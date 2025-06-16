@@ -148,17 +148,11 @@ async function fetchList(category) {
   loading.value = true;
   error.value = null;
   try {
-    const response = await axios.get(`${apiBase}/api/list?category=${category}`);
-    if (response.data.success) {
-      list.value = response.data.data || [];
-    } else {
-      error.value = response.data.message || 'Failed to fetch items';
-      list.value = [];
-    }
+    const response = await axios.get(`${apiBase}/list/category/${category}`);
+    list.value = response.data || [];
   } catch (err) {
-    error.value = 'Failed to connect to server';
+    error.value = 'Failed to Fetch Items';
     list.value = [];
-    console.error('Fetch error:', err);
   } finally {
     loading.value = false;
   }
@@ -169,12 +163,12 @@ async function addNewItem() {
   const { value: title } = await Swal.fire({
     title: 'Enter Title',
     input: 'textarea',
-    inputPlaceholder: 'Enter item title',
+    inputPlaceholder: 'Enter Item Title',
     showCancelButton: true,
     confirmButtonText: 'Next',
     inputValidator: (value) => {
       if (!value || !value.trim()) {
-        return 'Please enter a title';
+        return 'Please Enter a Title';
       }
     }
   });
@@ -187,20 +181,20 @@ async function addNewItem() {
         read: 'Read',
         pending: 'Pending'
       },
-      inputPlaceholder: 'Choose a category',
+      inputPlaceholder: 'Choose a Category',
       showCancelButton: true,
       confirmButtonText: 'Add',
       inputValidator: (value) => {
         if (!value) {
-          return 'Please select a category';
+          return 'Please Select a Category';
         }
       }
     });
     if (category) {
       try {
-        const response = await axios.post(`${apiBase}/api/list`, {
+        const response = await axios.post(`${apiBase}/list`, {
           title: title.trim(),
-          category
+          category: category
         });
         if (response.data.success) {
           list.value.push({
@@ -210,7 +204,7 @@ async function addNewItem() {
           activeCategory.value = category;
           Swal.fire({
             title: 'Success!',
-            text: 'Item added successfully',
+            text: response.data.message,
             icon: 'success',
             timer: 2000,
             showConfirmButton: false,
@@ -218,15 +212,14 @@ async function addNewItem() {
             position: 'top-end'
           });
         } else {
-          throw new Error(response.data.message);
+          throw new Error('Failed to Add Item');
         }
       } catch (err) {
         Swal.fire({
           title: 'Error!',
-          text: 'Failed to add item',
+          text: err.message,
           icon: 'error'
         });
-        console.error('Add error:', err);
       }
     }
   }
@@ -242,14 +235,13 @@ async function editItem(item, index) {
     confirmButtonText: 'Update',
     inputValidator: (value) => {
       if (!value || !value.trim()) {
-        return 'Please enter a title';
+        return 'Please Enter a Title';
       }
     }
   });
   if (title && title.trim() !== item.title) {
     try {
-      const response = await axios.put(`${apiBase}/api/list`, {
-        id: item.id,
+      const response = await axios.put(`${apiBase}/list/${item.id}`, {
         title: title.trim(),
         category: activeCategory.value
       });
@@ -257,7 +249,7 @@ async function editItem(item, index) {
         list.value[index] = { ...list.value[index], title: title.trim() };
         Swal.fire({
           title: 'Success!',
-          text: 'Item updated successfully',
+          text: response.data.message,
           icon: 'success',
           timer: 2000,
           showConfirmButton: false,
@@ -265,15 +257,14 @@ async function editItem(item, index) {
           position: 'top-end'
         });
       } else {
-        throw new Error(response.data.message);
+        throw new Error('Failed to Update Item');
       }
     } catch (err) {
       Swal.fire({
         title: 'Error!',
-        text: 'Failed to update item',
+        text: err.message,
         icon: 'error'
       });
-      console.error('Update error:', err);
     }
   }
 }
@@ -290,18 +281,12 @@ async function deleteItem(item, index) {
   });
   if (result.isConfirmed) {
     try {
-      console.log('Deleting item:', item, activeCategory.value);
-      const response = await axios.delete(`${apiBase}/api/list`, {
-        data: {
-          id: item.id,
-          category: activeCategory.value
-        }
-      });
+      const response = await axios.delete(`${apiBase}/list/${item.id}`);
       if (response.data.success) {
         list.value.splice(index, 1);
         Swal.fire({
           title: 'Deleted!',
-          text: 'Item deleted successfully',
+          text: response.data.message,
           icon: 'success',
           timer: 2000,
           showConfirmButton: false,
@@ -309,15 +294,14 @@ async function deleteItem(item, index) {
           position: 'top-end'
         });
       } else {
-        throw new Error(response.data.message);
+        throw new Error('Failed to Delete Item');
       }
     } catch (err) {
       Swal.fire({
         title: 'Error!',
-        text: 'Failed to delete item',
+        text: err.message,
         icon: 'error'
       });
-      console.error('Delete error:', err);
     }
   }
 }
@@ -346,22 +330,26 @@ async function logout() {
   try {
     console.log('Logging out...');
     const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-    const response = await fetch(`${apiBase}/api/logout`, {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiBase}/logout`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token
+      })
     });
     const data = await response.json();
     if (data.success) {
-      toast.success(data.message || 'Logged Out Successfully!', toastOptions);
-      document.body.style.backgroundColor = 'Black';
+      toast.success(data.message, toastOptions);
       localStorage.removeItem('token');
       router.push('/');
       window.location.reload();
     } else {
-      toast.error(data.message || 'Logout Failed, Please Try Again!', toastOptions);
+      toast.error('Error Logging Out', toastOptions);
     }
   } catch (error) {
-    console.error(error);
-    toast.error('Error connecting to server.', toastOptions);
+    console.log(error);
+    toast.error('Error Connecting to Server', toastOptions);
   }
 }
 </script>
