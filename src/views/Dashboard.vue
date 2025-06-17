@@ -52,6 +52,20 @@
         </button>
       </div>
       <div v-else-if="activeCategory" class="list-section">
+        <div class="section-header">
+          <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Search by Title..." />
+          <div>
+            <button @click="sortList('title')" class="sort-btn">
+              Sort by Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
+            </button>
+            <button @click="sortList('createdAt')" class="sort-btn">
+              Sort by Time Created &nbsp; {{ sortKey === 'createdAt' ? sortLabel : '' }}
+            </button>
+            <button @click="sortList('updatedAt')" class="sort-btn">
+              Sort by Time Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
+            </button>
+          </div>
+        </div>
         <div v-if="list.length === 0" class="empty-state">
           <div class="empty-icon">📝</div>
           <h3>No items yet</h3>
@@ -65,20 +79,6 @@
           </button>
         </div>
         <div v-else class="items-container">
-          <div class="section-header">
-            <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Search by Title..." />
-            <div>
-              <button @click="sortList('title')" class="sort-btn">
-                Sort by Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
-              </button>
-              <button @click="sortList('createdAt')" class="sort-btn">
-                Sort by Time Created &nbsp; {{ sortKey === 'createdAt' ? sortLabel : '' }}
-              </button>
-              <button @click="sortList('updatedAt')" class="sort-btn">
-                Sort by Time Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
-              </button>
-            </div>
-          </div>
           <div v-for="(item, index) in list" :key="item.id || index" class="list-item">
             <div class="item-content">
               <span class="row-no">{{ (pageNumber - 1) * pageSize + index + 1 }}</span>
@@ -103,26 +103,26 @@
               </button>
             </div>
           </div>
-          <div class="section-header">
-            Total {{ totalElements }} Item{{ totalElements > 1 ? 's' : '' }} in this Category
-            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="3">3 Items per Page</option>
-              <option :value="5">5 Items per Page</option>
-              <option :value="10">10 Items per Page</option>
-              <option :value="15">15 Items per Page</option>
-              <option :value="20">20 Items per Page</option>
-            </select>
-            <div v-if="totalPages > 1">
-              <button :disabled="pageNumber === 1" @click="pageNumber--; fetchList(activeCategory)" class="sort-btn">
-                Prev
-              </button>
-              Page {{ pageNumber }} / {{ totalPages }}
-              <button :disabled="pageNumber >= totalPages" @click="pageNumber++; fetchList(activeCategory)"
-                class="sort-btn">
-                Next
-              </button>
-            </div>
+        </div>
+        <div class="section-header">
+          Total {{ totalElements }} Item{{ totalElements > 1 ? 's' : '' }} Found
+          <div>
+            <button v-if="pageNumber > 1" @click="pageNumber--; fetchList(activeCategory)" class="sort-btn">
+              Prev
+            </button>
+            Page {{ pageNumber }} / {{ totalPages }}
+            <button v-if="pageNumber < totalPages" @click="pageNumber++; fetchList(activeCategory)"
+              class="sort-btn">
+              Next
+            </button>
           </div>
+          <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
+            <option :value="3">3 Items per Page</option>
+            <option :value="5">5 Items per Page</option>
+            <option :value="10">10 Items per Page</option>
+            <option :value="15">15 Items per Page</option>
+            <option :value="20">20 Items per Page</option>
+          </select>
         </div>
       </div>
       <div v-else class="welcome-state">
@@ -202,7 +202,6 @@ function handleFilter() {
 
 // Fetch Items
 async function fetchList(category) {
-  filterText.value = '';
   activeCategory.value = category;
   loading.value = true;
   error.value = null;
@@ -445,6 +444,12 @@ function formatDate(isoString) {
   }) + ', ' + date.toLocaleTimeString(undefined, {
     hour: '2-digit', minute: '2-digit'
   });
+}
+
+// Handle Page Size Change
+function handlePageSizeChange() {
+  pageNumber.value = 1;
+  fetchList(activeCategory.value);
 }
 </script>
 
@@ -778,6 +783,7 @@ function formatDate(isoString) {
   padding: 4rem;
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  margin: 1.5rem 0;
 }
 
 .empty-icon {
@@ -823,6 +829,7 @@ function formatDate(isoString) {
   flex-direction: column;
   color: rgba(74, 85, 104, 0.8);
   gap: 1rem;
+  margin: 1.5rem 0;
 }
 
 .list-item {
