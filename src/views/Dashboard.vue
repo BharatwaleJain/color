@@ -4,9 +4,9 @@
       <div class="nav-brand" @click="resetView" style="cursor:pointer">
         <div class="brand-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
           </svg>
         </div>
       </div>
@@ -51,7 +51,7 @@
           Try Again
         </button>
       </div>
-      <div v-else-if="activeCategory" class="list-section">        
+      <div v-else-if="activeCategory" class="list-section">
         <div v-if="list.length === 0" class="empty-state">
           <div class="empty-icon">📝</div>
           <h3>No items yet</h3>
@@ -65,10 +65,49 @@
           </button>
         </div>
         <div v-else class="items-container">
+          <div class="section-header">
+            <button class="sort-btn">
+              {{ totalElements }} Item{{ totalElements > 1 ? 's' : '' }}
+            </button>
+            <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Filter by Title..." />
+            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
+              <option :value="3">3 per page</option>
+              <option :value="5">5 per page</option>
+              <option :value="10">10 per page</option>
+              <option :value="15">15 per page</option>
+              <option :value="20">20 per page</option>
+            </select>
+            <div v-if="totalPages > 1">
+              <button :disabled="pageNumber === 1" @click="pageNumber--; fetchList(activeCategory)" class="sort-btn">
+                Prev
+              </button>
+              <span class="page-info">
+                {{ pageNumber }} / {{ totalPages }}
+              </span>
+              <button :disabled="pageNumber >= totalPages" @click="pageNumber++; fetchList(activeCategory)"
+                class="sort-btn">
+                Next
+              </button>
+            </div>
+            <div>
+              <button @click="sortList('title')" class="sort-btn">
+                Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
+              </button>
+              <button @click="sortList('createdAt')" class="sort-btn">
+                Created &nbsp; {{ sortKey === 'createdAt' ? sortLabel : '' }}
+              </button>
+              <button @click="sortList('updatedAt')" class="sort-btn">
+                Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
+              </button>
+            </div>
+          </div>
           <div v-for="(item, index) in list" :key="item.id || index" class="list-item">
             <div class="item-content">
+              <span class="row-no">{{ (pageNumber - 1) * pageSize + index + 1 }}</span>
               <div class="item-indicator"></div>
               <span class="item-title">{{ item.title }}</span>
+              <span class="item-date">{{ formatDate(item.createdAt) }}</span>
+              <span class="item-date">{{ formatDate(item.updatedAt) }}</span>
             </div>
             <div class="item-actions">
               <button @click="editItem(item, index)" class="action-btn edit-btn" title="Edit">
@@ -107,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -134,22 +173,46 @@ const list = ref([]);
 const activeCategory = ref('');
 const loading = ref(false);
 const error = ref(null);
+const sortDirection = ref('asc');
 const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const pageNumber = ref(1);
+const pageSize = ref(5);
+const sortKey = ref('createdAt');
+const totalElements = ref(0);
+const totalPages = ref(0);
+const filterText = ref('');
+
+// Reset View
+function resetView() {
+  activeCategory.value = '';
+  list.value = [];
+  error.value = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// handle Filter
+function handleFilter() {
+  pageNumber.value = 1;
+  fetchList(activeCategory.value);
+}
 
 // Fetch Items
-function resetView () {
-  activeCategory.value = ''
-  list.value = []
-  error.value = null
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
 async function fetchList(category) {
   activeCategory.value = category;
   loading.value = true;
   error.value = null;
   try {
-    const response = await axios.get(`${apiBase}/list/category/${category}`);
-    list.value = response.data || [];
+    const response = await axios.get(`${apiBase}/list/category/${category}`, {
+      params: {
+        page: pageNumber.value,
+        size: pageSize.value,
+        sort: `${sortKey.value},${sortDirection.value}`,
+        q: filterText.value.toLowerCase()
+      }
+    });
+    totalElements.value = response.data.totalElements || 0;
+    totalPages.value = response.data.totalPages;
+    list.value = response.data.content || [];
   } catch (err) {
     error.value = 'Failed to Fetch Items';
     list.value = [];
@@ -352,6 +415,33 @@ async function logout() {
     toast.error('Error Connecting to Server', toastOptions);
   }
 }
+
+// Sort List
+function sortList(key) {
+  if (sortKey.value === key) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortDirection.value = 'asc';
+  }
+  pageNumber.value = 1;
+  fetchList(activeCategory.value);
+}
+const sortLabel = computed(() =>
+  sortDirection.value === 'asc' ? '↑ ' : '↓ '
+);
+
+// Format Date
+function formatDate(isoString) {
+  if (!isoString)
+    return '';
+  const date = new Date(isoString);
+  return date.toLocaleDateString(undefined, {
+    day: '2-digit', month: 'short'
+  }) + ', ' + date.toLocaleTimeString(undefined, {
+    hour: '2-digit', minute: '2-digit'
+  });
+}
 </script>
 
 <style scoped>
@@ -360,15 +450,17 @@ async function logout() {
   padding: 0;
   box-sizing: border-box;
 }
+
 .app {
   width: 100vw;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   position: relative;
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
+
 .navbar {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -376,18 +468,20 @@ async function logout() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 1rem 3rem;
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  gap: 2rem;
+  gap: 2.5rem;
 }
+
 .nav-brand {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
+
 .brand-icon {
   width: 40px;
   height: 40px;
@@ -398,16 +492,19 @@ async function logout() {
   justify-content: center;
   color: white;
 }
+
 .navbar h1 {
   font-size: 1.5rem;
   font-weight: 700;
   color: #2d3748;
   margin: 0;
 }
+
 .nav-tabs {
   display: flex;
   gap: 1rem;
 }
+
 .nav-tab {
   background: transparent;
   border: 2px solid #e2e8f0;
@@ -420,6 +517,7 @@ async function logout() {
   position: relative;
   overflow: hidden;
 }
+
 .nav-tab::before {
   content: '';
   position: absolute;
@@ -427,28 +525,33 @@ async function logout() {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s;
 }
+
 .nav-tab:hover::before {
   left: 100%;
 }
+
 .nav-tab:hover {
   background: #f7fafc;
   border-color: #cbd5e0;
   transform: translateY(-2px);
 }
+
 .nav-tab.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border-color: transparent;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
+
 .nav-actions {
   display: flex;
   gap: 0.75rem;
   align-items: center;
 }
+
 .add-btn {
   display: flex;
   align-items: center;
@@ -463,10 +566,12 @@ async function logout() {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
 }
+
 .add-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
 }
+
 .logout-button {
   padding: 0.75rem;
   background: linear-gradient(135deg, #f56565, #e53e3e);
@@ -477,20 +582,23 @@ async function logout() {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
 }
+
 .logout-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(245, 101, 101, 0.4);
 }
+
 .main-content {
   padding: 2rem;
-  width: 80%;
-  max-width: 1000px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
   flex: 1 1 auto;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
 .loading {
   display: flex;
   flex-direction: column;
@@ -499,6 +607,7 @@ async function logout() {
   padding: 4rem;
   color: white;
 }
+
 .spinner {
   width: 3rem;
   height: 3rem;
@@ -508,10 +617,17 @@ async function logout() {
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
 }
+
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
+
 .error {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -520,19 +636,23 @@ async function logout() {
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
+
 .error-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
 }
+
 .error h3 {
   color: #2d3748;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
 }
+
 .error p {
   color: #718096;
   margin-bottom: 2rem;
 }
+
 .retry-btn {
   display: inline-flex;
   align-items: center;
@@ -546,35 +666,108 @@ async function logout() {
   font-weight: 600;
   transition: all 0.3s ease;
 }
+
 .retry-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.sort-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  background: rgba(255, 255, 255, 0.95);
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px);
   padding: 1.5rem;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
-.section-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+
+.section-header div {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.page-info {
+  font-size: 1.1rem;
   color: #2d3748;
-  margin: 0;
+  font-weight: 500;
 }
-.item-count {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 600;
+
+.filter-input {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.25rem 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  width: 150px;
 }
+
+.filter-input:focus,
+.filter-input:focus-visible {
+  outline: none;
+}
+
+.filter-input::placeholder,
+.filter-input::-webkit-input-placeholder {
+  color: #fff;
+  opacity: 0.8;
+}
+
+.filter-input:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+.page-size-select {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.25rem 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  cursor: pointer;
+}
+
+.page-size-select:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+.page-size-select option {
+  background: #fff;
+  color: #2d3748;
+}
+
 .empty-state {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -583,20 +776,24 @@ async function logout() {
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
+
 .empty-icon {
   font-size: 4rem;
   margin-bottom: 1.5rem;
 }
+
 .empty-state h3 {
   color: #2d3748;
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
+
 .empty-state p {
   color: #718096;
   margin-bottom: 2rem;
   font-size: 1.1rem;
 }
+
 .empty-add-btn {
   display: inline-flex;
   align-items: center;
@@ -612,20 +809,24 @@ async function logout() {
   transition: all 0.3s ease;
   box-shadow: 0 6px 20px rgba(72, 187, 120, 0.3);
 }
+
 .empty-add-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
 }
+
 .items-container {
   display: flex;
   flex-direction: column;
+  color: rgba(74, 85, 104, 0.8);
   gap: 1rem;
 }
+
 .list-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding: 1.2rem 1.6rem;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -633,32 +834,40 @@ async function logout() {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
+
 .list-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   border-color: rgba(102, 126, 234, 0.3);
 }
+
 .item-content {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.6rem;
   flex: 1;
 }
+
 .item-indicator {
+  margin-left: -1rem;
+  margin-right: -0.6rem;
   width: 4px;
   height: 40px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 2px;
 }
+
 .item-title {
   font-size: 1.1rem;
   color: #2d3748;
   font-weight: 500;
 }
+
 .item-actions {
   display: flex;
   gap: 0.5rem;
 }
+
 .action-btn {
   display: flex;
   align-items: center;
@@ -672,24 +881,29 @@ async function logout() {
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .edit-btn {
   color: #3182ce;
   border-color: #bee3f8;
 }
+
 .edit-btn:hover {
   background: #ebf8ff;
   border-color: #3182ce;
   transform: translateY(-1px);
 }
+
 .delete-btn {
   color: #e53e3e;
   border-color: #fed7d7;
 }
+
 .delete-btn:hover {
   background: #fed7d7;
   border-color: #e53e3e;
   transform: translateY(-1px);
 }
+
 .welcome-state {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -698,31 +912,37 @@ async function logout() {
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
+
 .welcome-content {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
+
 .welcome-icon {
   font-size: 4rem;
   margin-bottom: 1.5rem;
 }
+
 .welcome-state h2 {
   color: #2d3748;
   font-size: 2rem;
   margin-bottom: 1rem;
   font-weight: 700;
 }
+
 .welcome-state p {
   color: #718096;
   font-size: 1.1rem;
   margin-bottom: 3rem;
 }
+
 .category-preview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+  gap: 4rem;
   margin-top: 2rem;
 }
+
 .category-card {
   background: rgba(255, 255, 255, 0.8);
   border: 2px solid #e2e8f0;
@@ -735,14 +955,17 @@ async function logout() {
   align-items: center;
   gap: 1rem;
 }
+
 .category-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
   border-color: #667eea;
 }
+
 .category-icon {
   font-size: 2rem;
 }
+
 .category-card span {
   font-weight: 600;
   color: #2d3748;
@@ -752,6 +975,7 @@ async function logout() {
   .main-content {
     padding: 1.5rem;
   }
+
   .navbar {
     padding: 1rem 1.5rem;
   }
@@ -763,35 +987,37 @@ async function logout() {
     gap: 1rem;
     padding: 1rem;
   }
+
   .nav-brand {
     order: 1;
   }
+
   .nav-tabs {
     order: 2;
     width: 100%;
     justify-content: center;
   }
+
   .nav-actions {
     order: 3;
     width: 100%;
     justify-content: center;
   }
+
   .main-content {
     padding: 1rem;
   }
+
   .section-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
     text-align: center;
   }
-  .list-item {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
+
   .item-actions {
     justify-content: center;
   }
+
   .category-preview {
     grid-template-columns: 1fr;
   }
@@ -802,28 +1028,36 @@ async function logout() {
     flex-direction: column;
     width: 100%;
   }
+
   .nav-tab {
     width: 100%;
     text-align: center;
   }
+
   .action-btn span {
     display: none;
-    }
+  }
+
   .action-btn {
     padding: 0.5rem;
   }
+
   .action-btn .icon {
     font-size: 1.2rem;
   }
+
   .welcome-state {
     padding: 2rem;
   }
+
   .welcome-icon {
     font-size: 3rem;
   }
+
   .welcome-state h2 {
     font-size: 1.5rem;
   }
+
   .welcome-state p {
     font-size: 1rem;
   }
