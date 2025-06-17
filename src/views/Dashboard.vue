@@ -66,38 +66,16 @@
         </div>
         <div v-else class="items-container">
           <div class="section-header">
-            <button class="sort-btn">
-              {{ totalElements }} Item{{ totalElements > 1 ? 's' : '' }}
-            </button>
-            <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Filter by Title..." />
-            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
-              <option :value="3">3 per page</option>
-              <option :value="5">5 per page</option>
-              <option :value="10">10 per page</option>
-              <option :value="15">15 per page</option>
-              <option :value="20">20 per page</option>
-            </select>
-            <div v-if="totalPages > 1">
-              <button :disabled="pageNumber === 1" @click="pageNumber--; fetchList(activeCategory)" class="sort-btn">
-                Prev
-              </button>
-              <span class="page-info">
-                {{ pageNumber }} / {{ totalPages }}
-              </span>
-              <button :disabled="pageNumber >= totalPages" @click="pageNumber++; fetchList(activeCategory)"
-                class="sort-btn">
-                Next
-              </button>
-            </div>
+            <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Search by Title..." />
             <div>
               <button @click="sortList('title')" class="sort-btn">
-                Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
+                Sort by Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
               </button>
               <button @click="sortList('createdAt')" class="sort-btn">
-                Created &nbsp; {{ sortKey === 'createdAt' ? sortLabel : '' }}
+                Sort by Time Created &nbsp; {{ sortKey === 'createdAt' ? sortLabel : '' }}
               </button>
               <button @click="sortList('updatedAt')" class="sort-btn">
-                Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
+                Sort by Time Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
               </button>
             </div>
           </div>
@@ -125,6 +103,26 @@
               </button>
             </div>
           </div>
+          <div class="section-header">
+            Total {{ totalElements }} Item{{ totalElements > 1 ? 's' : '' }} in this Category
+            <select v-model.number="pageSize" @change="handlePageSizeChange" class="page-size-select">
+              <option :value="3">3 Items per Page</option>
+              <option :value="5">5 Items per Page</option>
+              <option :value="10">10 Items per Page</option>
+              <option :value="15">15 Items per Page</option>
+              <option :value="20">20 Items per Page</option>
+            </select>
+            <div v-if="totalPages > 1">
+              <button :disabled="pageNumber === 1" @click="pageNumber--; fetchList(activeCategory)" class="sort-btn">
+                Prev
+              </button>
+              Page {{ pageNumber }} / {{ totalPages }}
+              <button :disabled="pageNumber >= totalPages" @click="pageNumber++; fetchList(activeCategory)"
+                class="sort-btn">
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div v-else class="welcome-state">
@@ -146,12 +144,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+// import { c } from 'vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
 const router = useRouter();
 const toast = useToast();
 const toastOptions = {
@@ -179,7 +178,12 @@ const pageNumber = ref(1);
 const pageSize = ref(5);
 const sortKey = ref('createdAt');
 const totalElements = ref(0);
-const totalPages = ref(0);
+const totalPages = computed(() => {
+  if (!pageSize.value || pageSize.value <= 0 || !totalElements.value || totalElements.value <= 0) {
+    return 1;
+  }
+  return Math.ceil(totalElements.value / pageSize.value);
+});
 const filterText = ref('');
 
 // Reset View
@@ -198,6 +202,7 @@ function handleFilter() {
 
 // Fetch Items
 async function fetchList(category) {
+  filterText.value = '';
   activeCategory.value = category;
   loading.value = true;
   error.value = null;
@@ -207,11 +212,10 @@ async function fetchList(category) {
         page: pageNumber.value,
         size: pageSize.value,
         sort: `${sortKey.value},${sortDirection.value}`,
-        q: filterText.value.toLowerCase()
+        q: filterText.value.trim().toLowerCase()
       }
     });
     totalElements.value = response.data.totalElements || 0;
-    totalPages.value = response.data.totalPages;
     list.value = response.data.content || [];
   } catch (err) {
     error.value = 'Failed to Fetch Items';
@@ -696,21 +700,20 @@ function formatDate(isoString) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(20px);
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  font-size: 1.1rem;
+  color: #2d3748;
+  font-weight: 500;
 }
 
 .section-header div {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-}
-
-.page-info {
   font-size: 1.1rem;
   color: #2d3748;
   font-weight: 500;
@@ -726,7 +729,7 @@ function formatDate(isoString) {
   font-weight: 500;
   transition: background 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-  width: 150px;
+  width: 300px;
 }
 
 .filter-input:focus,
