@@ -54,21 +54,24 @@
       <div v-else-if="activeCategory" class="list-section">
         <div class="section-header">
           <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Search by Title..." />
+          <flat-pickr
+            v-model="dateRange"
+            :config="flatpickrConfig"
+            placeholder="Search by Created..."
+            class="date-picker"
+          />
           <div>
             <button @click="sortList('title')" class="sort-btn">
               Sort by Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
             </button>
-            <button @click="sortList('createdAt')" class="sort-btn">
-              Sort by Time Created &nbsp; {{ sortKey === 'createdAt' ? sortLabel : '' }}
-            </button>
             <button @click="sortList('updatedAt')" class="sort-btn">
-              Sort by Time Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
+              Sort by Updated &nbsp; {{ sortKey === 'updatedAt' ? sortLabel : '' }}
             </button>
           </div>
         </div>
         <div v-if="list.length === 0" class="empty-state">
           <div class="empty-icon">📝</div>
-          <h3>No items yet</h3>
+          <h3>No items yet for your query</h3>
           <p>Get started by adding your first {{ activeCategory }} item</p>
           <button @click="addNewItem" class="empty-add-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -128,7 +131,7 @@
       <div v-else class="welcome-state">
         <div class="welcome-content">
           <h2>Welcome to Dashboard</h2>
-          <p>Select a category to see list of items</p>
+          <p>Select any category to see list of items</p>
           <div class="category-preview">
             <div v-for="cat in categories" :key="cat" @click="fetchList(cat)" class="category-card">
               <div class="category-icon">
@@ -150,7 +153,9 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-// import { c } from 'vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
+import FlatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
+import 'flatpickr/dist/themes/dark.css';
 const router = useRouter();
 const toast = useToast();
 const toastOptions = {
@@ -185,6 +190,9 @@ const totalPages = computed(() => {
   return Math.ceil(totalElements.value / pageSize.value);
 });
 const filterText = ref('');
+const dateRange = ref([]);
+const startDate = ref(null);
+const endDate = ref(null);
 
 // Reset View
 function resetView() {
@@ -194,11 +202,32 @@ function resetView() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// handle Filter
+// Handle Filter
 function handleFilter() {
   pageNumber.value = 1;
   fetchList(activeCategory.value);
 }
+
+// Date Range Filter
+const flatpickrConfig = {
+  mode: 'range',
+  dateFormat: 'M j, Y',
+  altFormat: 'M j, Y',
+  onClose: (selectedDates, dateStr, instance) => {
+    if (selectedDates.length === 2) {
+      startDate.value = selectedDates[0];
+      endDate.value = selectedDates[1];
+      pageNumber.value = 1;
+      fetchList(activeCategory.value);
+    } else {
+      instance.clear();
+      startDate.value = null;
+      endDate.value = null;
+      pageNumber.value = 1;
+      fetchList(activeCategory.value);
+    }
+  }
+};
 
 // Fetch Items
 async function fetchList(category) {
@@ -206,13 +235,18 @@ async function fetchList(category) {
   loading.value = true;
   error.value = null;
   try {
+    const params = {
+      page: pageNumber.value,
+      size: pageSize.value,
+      sort: `${sortKey.value},${sortDirection.value}`,
+      q: filterText.value.trim().toLowerCase()
+    };
+    if (startDate.value)
+      params.startDate = new Date(startDate.value).toISOString();
+    if (endDate.value)
+      params.endDate = new Date(endDate.value).toISOString();
     const response = await axios.get(`${apiBase}/list/category/${category}`, {
-      params: {
-        page: pageNumber.value,
-        size: pageSize.value,
-        sort: `${sortKey.value},${sortDirection.value}`,
-        q: filterText.value.trim().toLowerCase()
-      }
+      params
     });
     totalElements.value = response.data.totalElements || 0;
     list.value = response.data.content || [];
@@ -734,7 +768,7 @@ function handlePageSizeChange() {
   font-weight: 500;
   transition: background 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-  width: 300px;
+  width: 200px;
 }
 
 .filter-input:focus,
@@ -749,6 +783,35 @@ function handlePageSizeChange() {
 }
 
 .filter-input:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+input.date-picker.flatpickr-input {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  width: 240px;
+}
+
+input.date-picker.flatpickr-input:focus,
+input.date-picker.flatpickr-input:focus-visible {
+  outline: none;
+}
+
+input.date-picker.flatpickr-input::placeholder,
+input.date-picker.flatpickr-input::-webkit-input-placeholder {
+  color: #fff;
+  opacity: 0.8;
+}
+
+input.date-picker.flatpickr-input:hover {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
 }
