@@ -35,11 +35,7 @@
       </div>
     </nav>
     <main class="main-content">
-      <div v-if="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Loading {{ activeCategory }}...</p>
-      </div>
-      <div v-else-if="error" class="error">
+      <div v-if="error" class="error">
         <div class="error-icon">⚠️</div>
         <h3>Oops! Something went wrong</h3>
         <p>{{ error }}</p>
@@ -175,7 +171,6 @@ const toastOptions = {
 const categories = ['task', 'read', 'pending'];
 const list = ref([]);
 const activeCategory = ref('');
-const loading = ref(false);
 const error = ref(null);
 const sortDirection = ref('asc');
 const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
@@ -232,7 +227,6 @@ const flatpickrConfig = {
 // Fetch Items
 async function fetchList(category) {
   activeCategory.value = category;
-  loading.value = true;
   error.value = null;
   try {
     const params = {
@@ -649,16 +643,6 @@ function handlePageSizeChange() {
   justify-content: center;
   padding: 4rem;
   color: white;
-}
-
-.spinner {
-  width: 3rem;
-  height: 3rem;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top: 4px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
 }
 
 @keyframes spin {

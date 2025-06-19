@@ -1,6 +1,9 @@
 <template>
   <div class="app">
-    <div v-if="!isLoggedIn" class="login-container">
+    <div v-if="loading" class="loading">
+      <div class="spinner"></div>
+    </div>
+    <div v-else-if="!isLoggedIn" class="login-container">
       <div class="login-form">
         <div class="login-header">
           <h2>Welcome Back</h2>
@@ -8,24 +11,12 @@
         </div>
         <div class="form-group">
           <div class="input-container">
-            <input 
-              v-model="username" 
-              type="text" 
-              placeholder="Username" 
-              class="form-input"
-              required
-            />
+            <input v-model="username" type="text" placeholder="Username" class="form-input" required />
             <div class="input-line"></div>
           </div>
-          
+
           <div class="input-container">
-            <input 
-              v-model="password" 
-              type="password" 
-              placeholder="Password" 
-              class="form-input"
-              required
-            />
+            <input v-model="password" type="password" placeholder="Password" class="form-input" required />
             <div class="input-line"></div>
           </div>
         </div>
@@ -63,12 +54,15 @@ const toastOptions = {
   icon: true,
   rtl: false,
 };
+const loading = ref(false);
 const username = ref('');
 const password = ref('');
 const isLoggedIn = ref(false);
 onMounted(() => {
+  loading.value = true;
   const token = localStorage.getItem('token');
   if (!token) {
+    loading.value = false;
     isLoggedIn.value = false;
     router.push('/');
     return;
@@ -82,15 +76,18 @@ onMounted(() => {
     .then(res => res.json())
     .then(data => {
       if (data.success) {
-        toast.success(data.message, toastOptions);
         isLoggedIn.value = true;
+        loading.value = false;
+        toast.success(data.message, toastOptions);
       } else {
+        loading.value = false;
         toast.error(data.message, toastOptions);
         localStorage.removeItem('token');
         router.push('/');
       }
     })
     .catch(() => {
+      loading.value = false;
       toast.error('Error Verifying Session', toastOptions);
     });
 });
@@ -134,6 +131,7 @@ async function login() {
   position: relative;
   overflow: hidden;
 }
+
 .app::before {
   content: '';
   position: absolute;
@@ -143,23 +141,45 @@ async function login() {
   bottom: 0;
   pointer-events: none;
 }
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: white;
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
 .login-container {
   animation: fadeInUp 0.8s ease-out;
   width: 80%;
   max-width: 500px;
 }
+
 .login-form {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 3rem 2.5rem;
   border-radius: 24px;
-  box-shadow: 
+  box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
 }
+
 .login-form::before {
   content: '';
   position: absolute;
@@ -170,10 +190,12 @@ async function login() {
   background: linear-gradient(90deg, transparent, #667eea, transparent);
   animation: shimmer 2s infinite;
 }
+
 .login-header {
   text-align: center;
   margin-bottom: 2rem;
 }
+
 .logo-circle {
   width: 60px;
   height: 60px;
@@ -186,6 +208,7 @@ async function login() {
   color: white;
   animation: pulse 2s infinite;
 }
+
 .login-header h2 {
   font-size: 2rem;
   font-weight: 700;
@@ -193,18 +216,22 @@ async function login() {
   margin: 0 0 0.5rem 0;
   letter-spacing: -0.025em;
 }
+
 .login-header p {
   color: #718096;
   font-size: 0.9rem;
   margin: 0;
 }
+
 .form-group {
   margin-bottom: 2rem;
 }
+
 .input-container {
   position: relative;
   margin-bottom: 1.5rem;
 }
+
 .form-input {
   width: 100%;
   padding: 1rem 0 1rem 0;
@@ -215,19 +242,23 @@ async function login() {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #2d3748;
 }
+
 .form-input:focus {
   outline: none;
   border-bottom-color: #667eea;
 }
+
 .form-input::placeholder {
   color: #a0aec0;
   transition: all 0.3s ease;
 }
+
 .form-input:focus::placeholder {
   transform: translateY(-2px);
   font-size: 0.85rem;
   color: #667eea;
 }
+
 .input-line {
   position: absolute;
   bottom: 0;
@@ -237,9 +268,11 @@ async function login() {
   background: linear-gradient(90deg, #667eea, #764ba2);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.form-input:focus + .input-line {
+
+.form-input:focus+.input-line {
   width: 100%;
 }
+
 .login-btn {
   width: 100%;
   padding: 1rem;
@@ -255,17 +288,21 @@ async function login() {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateY(0);
 }
+
 .login-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
 }
+
 .login-btn:active {
   transform: translateY(0);
 }
+
 .login-btn span {
   position: relative;
   z-index: 2;
 }
+
 .btn-ripple {
   position: absolute;
   top: 50%;
@@ -277,48 +314,70 @@ async function login() {
   transform: translate(-50%, -50%);
   transition: width 0.6s, height 0.6s;
 }
+
 .login-btn:active .btn-ripple {
   width: 300px;
   height: 300px;
 }
+
 .router-container {
   padding: 1rem;
   justify-content: center;
   flex-direction: column;
 }
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translate3d(0, 40px, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
   }
 }
+
 @keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
 }
+
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
+
 @media (max-width: 768px) {
   .login-form {
     padding: 2rem 1.5rem;
     width: 95%;
     max-width: none;
   }
+
   .login-header h2 {
     font-size: 1.75rem;
   }
 }
+
 @media (max-width: 480px) {
   .login-form {
     padding: 2rem 1.25rem;
     width: 95%;
   }
+
   .login-header h2 {
     font-size: 1.5rem;
   }
