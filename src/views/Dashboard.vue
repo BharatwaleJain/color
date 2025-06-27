@@ -16,6 +16,11 @@
           <span>{{ cat.charAt(0).toUpperCase() + cat.slice(1) }}</span>
         </button>
       </div>
+      <div class="nav-tabs" v-if="userStore.isAdmin">
+        <button class="nav-tab" style="cursor:pointer" @click="redirectToAdmin">
+          <span>Admin</span>
+        </button>
+      </div>
       <div class="nav-actions">
         <button @click="addNewItem" class="add-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -50,12 +55,8 @@
       <div v-else-if="activeCategory" class="list-section">
         <div class="section-header">
           <input v-model="filterText" @input="handleFilter" class="filter-input" placeholder="Search by Title..." />
-          <flat-pickr
-            v-model="dateRange"
-            :config="flatpickrConfig"
-            placeholder="Search by Created..."
-            class="date-picker"
-          />
+          <flat-pickr v-model="dateRange" :config="flatpickrConfig" placeholder="Search by Created..."
+            class="date-picker" />
           <div>
             <button @click="sortList('title')" class="sort-btn">
               Sort by Title &nbsp; {{ sortKey === 'title' ? sortLabel : '' }}
@@ -110,8 +111,7 @@
               Prev
             </button>
             Page {{ pageNumber }} / {{ totalPages }}
-            <button v-if="pageNumber < totalPages" @click="pageNumber++; fetchList(activeCategory)"
-              class="sort-btn">
+            <button v-if="pageNumber < totalPages" @click="pageNumber++; fetchList(activeCategory)" class="sort-btn">
               Next
             </button>
           </div>
@@ -143,16 +143,20 @@
 </template>
 
 <script setup>
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore()
 import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification';
 import FlatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 import 'flatpickr/dist/themes/dark.css';
 const router = useRouter();
+const route = useRoute()
 const toast = useToast();
 const toastOptions = {
   position: 'top-right',
@@ -168,7 +172,10 @@ const toastOptions = {
   icon: true,
   rtl: false,
 };
-const categories = ['task', 'read', 'pending'];
+const categories = computed(() => {
+  const all = ['task', 'read', 'pending'];
+  return all.filter((cat) => userStore.permissions.includes(cat));
+});
 const list = ref([]);
 const activeCategory = ref('');
 const error = ref(null);
@@ -188,6 +195,34 @@ const filterText = ref('');
 const dateRange = ref([]);
 const startDate = ref(null);
 const endDate = ref(null);
+
+// Fetch on mount
+onMounted(() => {
+  console.log(route.query)
+  if (route.query.category) {
+    activeCategory.value = route.query.category;
+    fetchList(route.query.category);
+  } else {
+    resetView();
+  }
+})
+
+watch(
+  () => route.query.category,
+  (newCategory) => {
+    console.log('watch route.query.category:', newCategory)
+    if (newCategory) {
+      activeCategory.value = newCategory;
+      fetchList(newCategory);
+    } else {
+      resetView();
+    }
+  }
+)
+
+function redirectToAdmin() {
+  router.push('/admin');
+}
 
 // Reset View
 function resetView() {
@@ -226,6 +261,7 @@ const flatpickrConfig = {
 
 // Fetch Items
 async function fetchList(category) {
+  router.push({ query: { ...route.query, category: category } })
   activeCategory.value = category;
   error.value = null;
   try {

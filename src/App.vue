@@ -33,6 +33,8 @@
 </template>
 
 <script setup>
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore();
 import { ref, onMounted } from 'vue';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -58,6 +60,7 @@ const loading = ref(false);
 const username = ref('');
 const password = ref('');
 const isLoggedIn = ref(false);
+const isAdmin = ref(false);
 onMounted(() => {
   loading.value = true;
   const token = localStorage.getItem('token');
@@ -77,7 +80,12 @@ onMounted(() => {
     .then(data => {
       if (data.success) {
         isLoggedIn.value = true;
+        isAdmin.value = data.admin || false;
         loading.value = false;
+        userStore.isAdmin = data.admin || false;
+        userStore.permissions = data.permission || [];
+        localStorage.setItem('isAdmin', data.admin || false);
+        localStorage.setItem('permissions', JSON.stringify(data.permission || []));
         toast.success(data.message, toastOptions);
       } else {
         loading.value = false;
@@ -107,6 +115,11 @@ async function login() {
     if (data.success) {
       toast.success(data.message, toastOptions);
       isLoggedIn.value = true;
+      isAdmin.value = data.admin || false;
+      userStore.isAdmin = data.admin || false;
+      userStore.permissions = data.permission || [];
+      localStorage.setItem('isAdmin', data.admin || false);
+      localStorage.setItem('permissions', JSON.stringify(data.permission || []));
       localStorage.setItem('token', data.token);
       router.push('/dashboard');
     } else {
