@@ -5,13 +5,7 @@
       <form @submit.prevent="submitForm">
         <label>
           Email
-          <input
-            v-model="form.username"
-            :disabled="isEdit"
-            type="email"
-            placeholder="Email"
-            required
-          />
+          <input v-model="form.username" :disabled="isEdit" type="email" placeholder="Email" required />
         </label>
         <label>
           Name
@@ -19,23 +13,13 @@
         </label>
         <label>
           Password
-          <input
-            v-model="form.password"
-            :disabled="isEdit"
-            type="password"
-            placeholder="Password"
-            required
-          />
+          <input v-model="form.password" :disabled="isEdit" type="password" placeholder="Password" required />
         </label>
         <div>
           <div style="font-weight:600; margin-bottom: 0.5rem;">Permissions:</div>
           <div class="perm-list">
             <label v-for="perm in permissionOptions" :key="perm">
-              <input
-                type="checkbox"
-                :value="perm"
-                v-model="form.permission"
-              />
+              <input type="checkbox" :value="perm" v-model="form.permission" />
               {{ perm.charAt(0).toUpperCase() + perm.slice(1) }}
             </label>
           </div>
@@ -113,28 +97,32 @@ function close() {
   position: fixed;
   z-index: 1000;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .modal-content {
   color: #888;
   background: #fff;
   border-radius: 16px;
   padding: 2rem 2.5rem;
   min-width: 320px;
-  box-shadow: 0 10px 32px rgba(0,0,0,0.12);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.12);
   position: relative;
 }
+
 .modal-content h2 {
   margin-bottom: 1.5rem;
 }
+
 .modal-content label {
   display: block;
   margin-bottom: 1rem;
   font-weight: 500;
 }
+
 .modal-content input[type="text"],
 .modal-content input[type="email"],
 .modal-content input[type="password"] {
@@ -145,17 +133,20 @@ function close() {
   border: 1px solid #ccc;
   font-size: 1rem;
 }
+
 .perm-list {
   display: flex;
   gap: 1.2rem;
   flex-wrap: wrap;
   margin-bottom: 1rem;
 }
+
 .modal-actions {
   display: flex;
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
 .modal-actions button {
   padding: 0.5rem 1.5rem;
   border-radius: 8px;
@@ -166,10 +157,12 @@ function close() {
   color: #fff;
   transition: background 0.2s;
 }
+
 .modal-actions button[type="button"] {
   background: #e2e8f0;
   color: #2d3748;
 }
+
 .modal-error {
   margin-top: 1rem;
   color: #e53e3e;

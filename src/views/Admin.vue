@@ -78,7 +78,7 @@
                             <span class="item-title">{{ user.name }}</span>
                             <span class="item-mail">{{ user.username }}</span>
                             <span>
-                                {{ user.permission && user.permission.length > 0 ? user.permission.join(', ') : "Can't Access Yet" }}
+                                {{ user.permission && user.permission.length > 0 ? user.permission.join(', ') : "Can't Access" }}
                             </span>
                         </div>
                         <div class="item-actions">
@@ -115,18 +115,18 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { useToast } from 'vue-toastification';
 const toast = useToast();
 const toastOptions = {
-  position: 'top-right',
-  timeout: 3000,
-  closeOnClick: true,
-  pauseOnFocusLoss: true,
-  pauseOnHover: true,
-  draggable: true,
-  draggablePercent: 0.6,
-  showCloseButtonOnHover: false,
-  hideProgressBar: true,
-  closeButton: "button",
-  icon: true,
-  rtl: false,
+    position: 'top-right',
+    timeout: 3000,
+    closeOnClick: true,
+    pauseOnFocusLoss: true,
+    pauseOnHover: true,
+    draggable: true,
+    draggablePercent: 0.6,
+    showCloseButtonOnHover: false,
+    hideProgressBar: true,
+    closeButton: "button",
+    icon: true,
+    rtl: false,
 };
 const permissionOptions = ['task', 'read', 'pending']
 const categories = ['task', 'read', 'pending']
@@ -140,141 +140,141 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 onMounted(async () => {
-  try {
-    const response = await fetch('http://localhost:3000/users')
-    if (!response.ok) throw new Error('Failed to fetch users')
-    users.value = await response.json()
-  } catch (err) {
-    users.value = []
-  }
+    try {
+        const response = await fetch('http://localhost:3000/users')
+        if (!response.ok) throw new Error('Failed to fetch users')
+        users.value = await response.json()
+    } catch (err) {
+        users.value = []
+    }
 })
 
 const filteredUsers = computed(() => {
-  const q = filterUser.value.trim().toLowerCase()
-  if (!q) return users.value
-  return users.value.filter(u =>
-    u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)
-  )
+    const q = filterUser.value.trim().toLowerCase()
+    if (!q) return users.value
+    return users.value.filter(u =>
+        u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)
+    )
 })
 
 function openAddModal() {
-  isEdit.value = false
-  modalUser.value = {
-    username: '',
-    name: '',
-    password: '',
-    permission: []
-  }
-  showModal.value = true
+    isEdit.value = false
+    modalUser.value = {
+        username: '',
+        name: '',
+        password: '',
+        permission: []
+    }
+    showModal.value = true
 }
 
 function openEditModal(user, idx) {
-  isEdit.value = true
-  modalUser.value = { ...user }
-  editIndex.value = idx
-  showModal.value = true
+    isEdit.value = true
+    modalUser.value = { ...user }
+    editIndex.value = idx
+    showModal.value = true
 }
 
 function closeModal() {
-  showModal.value = false
+    showModal.value = false
 }
 
 async function handleModalSave(form) {
-  if (isEdit.value) {
-    const idx = editIndex.value;
-    if (idx !== -1) {
-      try {
-        const userId = users.value[idx].id;
-        const response = await fetch(`http://localhost:3000/users/${userId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form)
-        });
-        if (!response.ok) throw new Error('Failed to update user');
-        const updatedUser = await response.json();
-        users.value[idx] = updatedUser;
-        showModal.value = false;
-        await Swal.fire({
-          title: 'Success!',
-          text: 'User updated successfully.',
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false,
-          toast: true,
-          position: 'top-end'
-        });
-      } catch (err) {
-        Swal.fire({
-          title: 'Error!',
-          text: err.message,
-          icon: 'error'
-        });
-      }
+    if (isEdit.value) {
+        const idx = editIndex.value;
+        if (idx !== -1) {
+            try {
+                const userId = users.value[idx].id;
+                const response = await fetch(`http://localhost:3000/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(form)
+                });
+                if (!response.ok) throw new Error('Failed to update user');
+                const updatedUser = await response.json();
+                users.value[idx] = updatedUser;
+                showModal.value = false;
+                await Swal.fire({
+                    title: 'Success!',
+                    text: 'User updated successfully.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: err.message,
+                    icon: 'error'
+                });
+            }
+        }
+    } else {
+        try {
+            const response = await fetch('http://localhost:3000/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form)
+            });
+            if (!response.ok) throw new Error('Failed to create user');
+            const newUser = await response.json();
+            users.value.unshift(newUser);
+            showModal.value = false;
+            await Swal.fire({
+                title: 'Success!',
+                text: 'User added successfully.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (err) {
+            Swal.fire({
+                title: 'Error!',
+                text: err.message,
+                icon: 'error'
+            });
+        }
     }
-  } else {
-    try {
-      const response = await fetch('http://localhost:3000/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
-      if (!response.ok) throw new Error('Failed to create user');
-      const newUser = await response.json();
-      users.value.unshift(newUser);
-      showModal.value = false;
-      await Swal.fire({
-        title: 'Success!',
-        text: 'User added successfully.',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-    } catch (err) {
-      Swal.fire({
-        title: 'Error!',
-        text: err.message,
-        icon: 'error'
-      });
-    }
-  }
 }
 
 async function deleteUser(idx) {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Delete user "${users.value[idx].name}"?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, delete it!',
-    confirmButtonColor: '#ef4444'
-  });
-  if (result.isConfirmed) {
-    const userId = users.value[idx].id;
-    try {
-      const response = await fetch(`http://localhost:3000/users/${userId}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete user');
-      users.value.splice(idx, 1);
-      await Swal.fire({
-        title: 'Deleted!',
-        text: 'User deleted successfully.',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-    } catch (err) {
-      Swal.fire({
-        title: 'Error!',
-        text: err.message,
-        icon: 'error'
-      });
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Delete user "${users.value[idx].name}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        confirmButtonColor: '#ef4444'
+    });
+    if (result.isConfirmed) {
+        const userId = users.value[idx].id;
+        try {
+            const response = await fetch(`http://localhost:3000/users/${userId}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) throw new Error('Failed to delete user');
+            users.value.splice(idx, 1);
+            await Swal.fire({
+                title: 'Deleted!',
+                text: 'User deleted successfully.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (err) {
+            Swal.fire({
+                title: 'Error!',
+                text: err.message,
+                icon: 'error'
+            });
+        }
     }
-  }
 }
 
 function redirectToDashboard() {
@@ -293,49 +293,49 @@ function goToDashboardWithCategory(cat) {
 
 // Logout Confirmation
 function confirmLogout() {
-  Swal.fire({
-    title: '',
-    text: 'Are you sure you want to logout?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, logout',
-    cancelButtonText: 'No, cancel',
-    reverseButtons: true,
-    confirmButtonColor: '#41b882',
-    cancelButtonColor: '#ff7674',
-  }).then((result) => {
-    if (result.isConfirmed) {
-      logout();
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      toast.error('Logout cancelled.', toastOptions);
-    }
-  });
+    Swal.fire({
+        title: '',
+        text: 'Are you sure you want to logout?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, logout',
+        cancelButtonText: 'No, cancel',
+        reverseButtons: true,
+        confirmButtonColor: '#41b882',
+        cancelButtonColor: '#ff7674',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            logout();
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            toast.error('Logout cancelled.', toastOptions);
+        }
+    });
 }
 async function logout() {
-  try {
-    console.log('Logging out...');
-    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${apiBase}/logout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token
-      })
-    });
-    const data = await response.json();
-    if (data.success) {
-      toast.success(data.message, toastOptions);
-      localStorage.removeItem('token');
-      router.push('/');
-      window.location.reload();
-    } else {
-      toast.error('Error Logging Out', toastOptions);
+    try {
+        console.log('Logging out...');
+        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                token
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            toast.success(data.message, toastOptions);
+            localStorage.removeItem('token');
+            router.push('/');
+            window.location.reload();
+        } else {
+            toast.error('Error Logging Out', toastOptions);
+        }
+    } catch (error) {
+        console.log(error);
+        toast.error('Error Connecting to Server', toastOptions);
     }
-  } catch (error) {
-    console.log(error);
-    toast.error('Error Connecting to Server', toastOptions);
-  }
 }
 </script>
 
@@ -567,15 +567,15 @@ async function logout() {
 }
 
 .list-top {
-  display: flex;
-  color: #2d3748;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.2rem 1.6rem;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    color: #2d3748;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.2rem 1.6rem;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .list-item {
@@ -607,7 +607,7 @@ async function logout() {
 }
 
 .row-no {
-  width: 1rem;
+    width: 1rem;
 }
 
 .item-indicator {

@@ -49,7 +49,7 @@ export default {
   justify-content: center;
   align-items: center;
   flex-direction: row;
-  flex-wrap: wrap;    /* Corrected */
+  flex-wrap: wrap;
   gap: 0.6rem;
 }
 </style>
