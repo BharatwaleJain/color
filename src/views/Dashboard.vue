@@ -79,6 +79,16 @@
           </button>
         </div>
         <div v-else class="items-container">
+          <div class="list-top">
+            <div class="item-content">
+              <span class="row-no">No</span>
+              <div class="item-indicator"></div>
+              <span class="item-title">Title</span>
+              <span class="item-date">Created At</span>
+              <span class="item-date">Updated At</span>
+              <span>Assigned to</span>
+            </div>
+          </div>
           <div v-for="(item, index) in list" :key="item.id || index" class="list-item">
             <div class="item-content">
               <span class="row-no">{{ (pageNumber - 1) * pageSize + index + 1 }}</span>
@@ -86,6 +96,8 @@
               <span class="item-title">{{ item.title }}</span>
               <span class="item-date">{{ formatDate(item.createdAt) }}</span>
               <span class="item-date">{{ formatDate(item.updatedAt) }}</span>
+              <span v-if="item.userName">{{ item.userName }}</span>
+              <span v-else>Not Yet</span>
             </div>
             <div class="item-actions">
               <button @click="editItem(item, index)" class="action-btn edit-btn" title="Edit">
@@ -283,8 +295,6 @@ async function fetchList(category) {
   } catch (err) {
     error.value = 'Failed to Fetch Items';
     list.value = [];
-  } finally {
-    loading.value = false;
   }
 }
 
@@ -915,6 +925,18 @@ input.date-picker.flatpickr-input:hover {
   margin: 1.5rem 0;
 }
 
+.list-top {
+  display: flex;
+  color: #2d3748;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.2rem 1.6rem;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .list-item {
   display: flex;
   justify-content: space-between;
@@ -941,6 +963,10 @@ input.date-picker.flatpickr-input:hover {
   flex: 1;
 }
 
+.row-no {
+  width: 1rem;
+}
+
 .item-indicator {
   margin-left: -1rem;
   margin-right: -0.6rem;
@@ -954,6 +980,11 @@ input.date-picker.flatpickr-input:hover {
   font-size: 1.1rem;
   color: #2d3748;
   font-weight: 500;
+  width: 18rem;
+}
+
+.item-date {
+  width: 8rem;
 }
 
 .item-actions {

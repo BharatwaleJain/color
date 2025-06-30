@@ -60,15 +60,25 @@
                     </button>
                 </div>
                 <div v-else class="items-container">
+                    <div class="list-top">
+                        <div class="item-content">
+                            <span class="row-no">No</span>
+                            <div class="item-indicator"></div>
+                            <span class="item-title">Full Name</span>
+                            <span class="item-mail">Mail ID</span>
+                            <span>
+                                Category Access
+                            </span>
+                        </div>
+                    </div>
                     <div v-for="(user, index) in filteredUsers" :key="user.username" class="list-item">
                         <div class="item-content">
                             <span class="row-no">{{ index + 1 }}</span>
                             <div class="item-indicator"></div>
                             <span class="item-title">{{ user.name }}</span>
-                            <span class="item-title">{{ user.username }}</span>
-                            <span class="item-title" style="color: #555; font-size: 0.9rem;">
-                                {{ user.permission && user.permission.length > 0 ? 'Can access: ' +
-                                    user.permission.join(', ') : "Can't access" }}
+                            <span class="item-mail">{{ user.username }}</span>
+                            <span>
+                                {{ user.permission && user.permission.length > 0 ? user.permission.join(', ') : "Can't Access Yet" }}
                             </span>
                         </div>
                         <div class="item-actions">
@@ -99,7 +109,25 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import UserModal from './UserModal.vue' 
+import UserModal from './UserModal.vue'
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+import { useToast } from 'vue-toastification';
+const toast = useToast();
+const toastOptions = {
+  position: 'top-right',
+  timeout: 3000,
+  closeOnClick: true,
+  pauseOnFocusLoss: true,
+  pauseOnHover: true,
+  draggable: true,
+  draggablePercent: 0.6,
+  showCloseButtonOnHover: false,
+  hideProgressBar: true,
+  closeButton: "button",
+  icon: true,
+  rtl: false,
+};
 const permissionOptions = ['task', 'read', 'pending']
 const categories = ['task', 'read', 'pending']
 const users = ref([])
@@ -151,32 +179,101 @@ function closeModal() {
   showModal.value = false
 }
 
-function handleModalSave(form) {
+async function handleModalSave(form) {
   if (isEdit.value) {
-    const idx = editIndex.value
+    const idx = editIndex.value;
     if (idx !== -1) {
-      users.value[idx].name = form.name
-      if (form.password) users.value[idx].password = form.password
-      users.value[idx].permission = [...form.permission]
+      try {
+        const userId = users.value[idx].id;
+        const response = await fetch(`http://localhost:3000/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+        if (!response.ok) throw new Error('Failed to update user');
+        const updatedUser = await response.json();
+        users.value[idx] = updatedUser;
+        showModal.value = false;
+        await Swal.fire({
+          title: 'Success!',
+          text: 'User updated successfully.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      } catch (err) {
+        Swal.fire({
+          title: 'Error!',
+          text: err.message,
+          icon: 'error'
+        });
+      }
     }
   } else {
-    if (users.value.some(u => u.username === form.username)) {
-      alert('Username already exists')
-      return
+    try {
+      const response = await fetch('http://localhost:3000/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      if (!response.ok) throw new Error('Failed to create user');
+      const newUser = await response.json();
+      users.value.unshift(newUser);
+      showModal.value = false;
+      await Swal.fire({
+        title: 'Success!',
+        text: 'User added successfully.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    } catch (err) {
+      Swal.fire({
+        title: 'Error!',
+        text: err.message,
+        icon: 'error'
+      });
     }
-    users.value.push({
-      username: form.username,
-      name: form.name,
-      password: form.password,
-      permission: [...form.permission]
-    })
   }
-  showModal.value = false
 }
 
-function deleteUser(idx) {
-  if (confirm('Are you sure you want to delete this user?')) {
-    users.value.splice(idx, 1)
+async function deleteUser(idx) {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Delete user "${users.value[idx].name}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    confirmButtonColor: '#ef4444'
+  });
+  if (result.isConfirmed) {
+    const userId = users.value[idx].id;
+    try {
+      const response = await fetch(`http://localhost:3000/users/${userId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete user');
+      users.value.splice(idx, 1);
+      await Swal.fire({
+        title: 'Deleted!',
+        text: 'User deleted successfully.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    } catch (err) {
+      Swal.fire({
+        title: 'Error!',
+        text: err.message,
+        icon: 'error'
+      });
+    }
   }
 }
 
@@ -192,6 +289,53 @@ function goToDashboardWithCategory(cat) {
     }
     console.log(`Redirecting to category: ${cat}`)
     router.push({ name: 'dashboard', query: { category: cat } })
+}
+
+// Logout Confirmation
+function confirmLogout() {
+  Swal.fire({
+    title: '',
+    text: 'Are you sure you want to logout?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, logout',
+    cancelButtonText: 'No, cancel',
+    reverseButtons: true,
+    confirmButtonColor: '#41b882',
+    cancelButtonColor: '#ff7674',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      logout();
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      toast.error('Logout cancelled.', toastOptions);
+    }
+  });
+}
+async function logout() {
+  try {
+    console.log('Logging out...');
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiBase}/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      toast.success(data.message, toastOptions);
+      localStorage.removeItem('token');
+      router.push('/');
+      window.location.reload();
+    } else {
+      toast.error('Error Logging Out', toastOptions);
+    }
+  } catch (error) {
+    console.log(error);
+    toast.error('Error Connecting to Server', toastOptions);
+  }
 }
 </script>
 
@@ -422,6 +566,18 @@ function goToDashboardWithCategory(cat) {
     margin: 1.5rem 0;
 }
 
+.list-top {
+  display: flex;
+  color: #2d3748;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.2rem 1.6rem;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .list-item {
     display: flex;
     justify-content: space-between;
@@ -446,6 +602,12 @@ function goToDashboardWithCategory(cat) {
     align-items: center;
     gap: 2rem;
     flex: 1;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.row-no {
+  width: 1rem;
 }
 
 .item-indicator {
@@ -461,6 +623,11 @@ function goToDashboardWithCategory(cat) {
     font-size: 1.1rem;
     color: #2d3748;
     font-weight: 500;
+    width: 10rem;
+}
+
+.item-mail {
+    width: 15rem;
 }
 
 .item-actions {
