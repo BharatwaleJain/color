@@ -82,6 +82,16 @@
                             </span>
                         </div>
                         <div class="item-actions">
+                            <label class="toggle-switch">
+                                <input
+                                    type="checkbox"
+                                    :checked="user.status"
+                                    @change="onStatusToggle($event, index)"
+                                >
+                                <span class="slider">
+                                    {{ user.status ? 'Login Enabled' : 'Login Disabled' }}
+                                </span>
+                            </label>
                             <button @click="openEditModal(user, index)" class="action-btn edit-btn" title="Edit">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -156,6 +166,51 @@ const filteredUsers = computed(() => {
         u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)
     )
 })
+
+// Enable/Disable Login
+async function onStatusToggle(event, idx) {
+  const user = users.value[idx];
+  const newStatus = event.target.checked;
+  const actionText = newStatus ? 'enable login for' : 'disable login for';
+  const confirmButtonColor = newStatus ? '#3182ce' : '#e53e3e';
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Do you want to ${actionText} "${user.name}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: `Yes, ${newStatus ? 'enable' : 'disable'}!`,
+    confirmButtonColor,
+  });
+  if (result.isConfirmed) {
+    try {
+      const response = await fetch(`http://localhost:3000/users/${user.id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+      user.status = newStatus;
+      await Swal.fire({
+        title: 'Updated!',
+        text: `Login has been ${newStatus ? 'enabled' : 'disabled'} for "${user.name}".`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    } catch (err) {
+      event.target.checked = !newStatus;
+      Swal.fire({
+        title: 'Error!',
+        text: err.message,
+        icon: 'error'
+      });
+    }
+  } else {
+    event.target.checked = !newStatus;
+  }
+}
 
 function openAddModal() {
     isEdit.value = false
@@ -623,16 +678,16 @@ async function logout() {
     font-size: 1.1rem;
     color: #2d3748;
     font-weight: 500;
-    width: 10rem;
+    width: 8rem;
 }
 
 .item-mail {
-    width: 15rem;
+    width: 12rem;
 }
 
 .item-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 1.5rem;
 }
 
 .action-btn {
@@ -647,6 +702,48 @@ async function logout() {
     font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch .slider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.5rem 1rem;
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  background: #e53e3e;
+  border-radius: 10px;
+  gap: 0.5rem;
+}
+
+.toggle-switch input:checked + .slider {
+  background: #3182ce;
 }
 
 .edit-btn {
