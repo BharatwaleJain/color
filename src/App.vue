@@ -84,8 +84,6 @@ onMounted(() => {
         loading.value = false;
         userStore.isAdmin = data.admin || false;
         userStore.permissions = data.permission || [];
-        localStorage.setItem('isAdmin', data.admin || false);
-        localStorage.setItem('permissions', JSON.stringify(data.permission || []));
         toast.success(data.message, toastOptions);
       } else {
         loading.value = false;
@@ -118,8 +116,6 @@ async function login() {
       isAdmin.value = data.admin || false;
       userStore.isAdmin = data.admin || false;
       userStore.permissions = data.permission || [];
-      localStorage.setItem('isAdmin', data.admin || false);
-      localStorage.setItem('permissions', JSON.stringify(data.permission || []));
       localStorage.setItem('token', data.token);
       router.push('/dashboard');
     } else {

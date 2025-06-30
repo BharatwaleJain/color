@@ -21,9 +21,10 @@
           Password
           <input
             v-model="form.password"
+            :disabled="isEdit"
             type="password"
-            :placeholder="isEdit ? 'Leave blank to keep' : 'Password'"
-            :required="!isEdit"
+            placeholder="Password"
+            required
           />
         </label>
         <div>
@@ -75,7 +76,7 @@ watch(
       if (props.isEdit && props.user) {
         form.username = props.user.username
         form.name = props.user.name
-        form.password = ''
+        form.password = 'password'
         form.permission = [...(props.user.permission || [])]
       } else {
         form.username = ''
@@ -91,16 +92,12 @@ watch(
 
 function submitForm() {
   error.value = ''
-  if (!form.username || !form.name || (!props.isEdit && !form.password)) {
+  if (!form.username || !form.name || !form.password) {
     error.value = 'All fields are required'
     return
   }
   if (!/^[^@]+@[^@]+\.[^@]+$/.test(form.username)) {
     error.value = 'Invalid email'
-    return
-  }
-  if (!form.permission.length) {
-    error.value = 'Select at least one permission'
     return
   }
   emit('save', { ...form })

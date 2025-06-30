@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useUserStore } from './stores/user';
 import Dashboard from './views/Dashboard.vue';
 import Admin from './views/Admin.vue';
 import Color from './views/Color.vue';
@@ -15,6 +16,10 @@ const router = createRouter({
   routes,
 });
 router.beforeEach((to, from, next) => {
+  const userStore = useUserStore();
+  console.log('Navigating to:', to.path, userStore);
+  console.log('User is admin:', userStore.isAdmin);
+  console.log('User permissions:', userStore.permissions);
   const isLoggedIn = localStorage.getItem('token') !== null;
   if (to.path === '/color' || to.path === '/forbidden') {
     next();
@@ -30,8 +35,7 @@ router.beforeEach((to, from, next) => {
     }
   }
   if (to.path === '/admin') {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (isAdmin) {
+    if (userStore.isAdmin) {
       next();
     } else {
       next('/forbidden');
@@ -39,43 +43,15 @@ router.beforeEach((to, from, next) => {
     return;
   }
   if (to.path.startsWith('/dashboard')) {
-    const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
     const url = new URL(window.location.origin + to.fullPath);
     const category = url.searchParams.get('category');
-    if (!category || permissions.includes(category)) {
+    if (!category || userStore.permissions.includes(category)) {
       next();
     } else {
       next('/forbidden');
     }
     return;
   }
-  next();
-});
-router.beforeEach((to, from, next) => {
-  if (to.path === '/color' || to.path === '/forbidden' || to.path === '/') {
-    next();
-    return;
-  }
-  if (to.path === '/admin') {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (isAdmin) {
-      next();
-    } else {
-      next('/forbidden');
-    }
-    return;
-  }
-  if (to.path.startsWith('/dashboard')) {
-    const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
-    const url = new URL(window.location.origin + to.fullPath);
-    const category = url.searchParams.get('category');
-    if (!category || permissions.includes(category)) {
-      next();
-    } else {
-      next('/forbidden');
-    }
-    return;
-  }
-  next();
+  next('/forbidden');
 });
 export default router;

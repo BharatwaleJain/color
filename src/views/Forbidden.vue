@@ -2,11 +2,24 @@
   <div class="forbidden">
     <h1>403 Forbidden</h1>
     <p>You do not have permission to access this page.</p>
-    <router-link to="/" class="white-button">Go to Home</router-link>
+    <router-link to="/" class="white-button">Returning in {{ countdown }} seconds...</router-link>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
+const countdown = ref(5);
+onMounted(() => {
+  const interval = setInterval(() => {
+    countdown.value--;
+    if (countdown.value <= 0) {
+      clearInterval(interval);
+    }
+  }, 1000);
+  setTimeout(() => {
+    window.location.href = '/';
+  }, 5000);
+});
 </script>
 
 <style scoped>
