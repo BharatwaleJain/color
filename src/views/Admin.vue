@@ -64,10 +64,19 @@
                         <div class="item-content">
                             <span class="row-no">No</span>
                             <div class="item-indicator"></div>
-                            <span class="item-title">Full Name</span>
+                            <span class="item-title">Username</span>
                             <span class="item-mail">Mail ID</span>
-                            <span>
+                            <span class="item-perm">
                                 Category Access
+                            </span>
+                            <span class="item-status">
+                                Login Status
+                            </span>
+                            <span>
+                                Edit User
+                            </span>
+                            <span>
+                                Delete User
                             </span>
                         </div>
                     </div>
@@ -83,11 +92,7 @@
                         </div>
                         <div class="item-actions">
                             <label class="toggle-switch">
-                                <input
-                                    type="checkbox"
-                                    :checked="user.status"
-                                    @change="onStatusToggle($event, index)"
-                                >
+                                <input type="checkbox" :checked="user.status" @change="onStatusToggle($event, index)">
                                 <span class="slider">
                                     {{ user.status ? 'Login Enabled' : 'Login Disabled' }}
                                 </span>
@@ -126,7 +131,7 @@ import { useToast } from 'vue-toastification';
 const toast = useToast();
 const toastOptions = {
     position: 'top-right',
-    timeout: 3000,
+    timeout: 2000,
     closeOnClick: true,
     pauseOnFocusLoss: true,
     pauseOnHover: true,
@@ -169,47 +174,47 @@ const filteredUsers = computed(() => {
 
 // Enable/Disable Login
 async function onStatusToggle(event, idx) {
-  const user = users.value[idx];
-  const newStatus = event.target.checked;
-  const actionText = newStatus ? 'enable login for' : 'disable login for';
-  const confirmButtonColor = newStatus ? '#3182ce' : '#e53e3e';
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Do you want to ${actionText} "${user.name}"?`,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: `Yes, ${newStatus ? 'enable' : 'disable'}!`,
-    confirmButtonColor,
-  });
-  if (result.isConfirmed) {
-    try {
-      const response = await fetch(`http://localhost:3000/users/${user.id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (!response.ok) throw new Error('Failed to update status');
-      user.status = newStatus;
-      await Swal.fire({
-        title: 'Updated!',
-        text: `Login has been ${newStatus ? 'enabled' : 'disabled'} for "${user.name}".`,
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-    } catch (err) {
-      event.target.checked = !newStatus;
-      Swal.fire({
-        title: 'Error!',
-        text: err.message,
-        icon: 'error'
-      });
+    const user = users.value[idx];
+    const newStatus = event.target.checked;
+    const actionText = newStatus ? 'enable login for' : 'disable login for';
+    const confirmButtonColor = newStatus ? '#3182ce' : '#e53e3e';
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to ${actionText} "${user.name}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `Yes, ${newStatus ? 'enable' : 'disable'}!`,
+        confirmButtonColor,
+    });
+    if (result.isConfirmed) {
+        try {
+            const response = await fetch(`http://localhost:3000/users/${user.id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (!response.ok) throw new Error('Failed to update status');
+            user.status = newStatus;
+            await Swal.fire({
+                title: 'Updated!',
+                text: `Login has been ${newStatus ? 'enabled' : 'disabled'} for "${user.name}".`,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } catch (err) {
+            event.target.checked = !newStatus;
+            Swal.fire({
+                title: 'Error!',
+                text: err.message,
+                icon: 'error'
+            });
+        }
+    } else {
+        event.target.checked = !newStatus;
     }
-  } else {
-    event.target.checked = !newStatus;
-  }
 }
 
 function openAddModal() {
@@ -273,9 +278,17 @@ async function handleModalSave(form) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)
             });
-            if (!response.ok) throw new Error('Failed to create user');
-            const newUser = await response.json();
-            users.value.unshift(newUser);
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                data = {};
+            }
+            if (!response.ok) {
+                const message = data.message || 'Failed to create user';
+                throw new Error(message);
+            }
+            users.value.unshift(data);
             showModal.value = false;
             await Swal.fire({
                 title: 'Success!',
@@ -678,11 +691,19 @@ async function logout() {
     font-size: 1.1rem;
     color: #2d3748;
     font-weight: 500;
-    width: 8rem;
+    width: 10rem;
 }
 
 .item-mail {
     width: 12rem;
+}
+
+.item-perm {
+    width: 15rem;
+}
+
+.item-status {
+    width: 7rem;
 }
 
 .item-actions {
@@ -705,45 +726,45 @@ async function logout() {
 }
 
 .toggle-switch {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  position: relative;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  background: transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    position: relative;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
 .toggle-switch .slider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  padding: 0.5rem 1rem;
-  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #fff;
-  background: #e53e3e;
-  border-radius: 10px;
-  gap: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0.5rem 1rem;
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #fff;
+    background: #e53e3e;
+    border-radius: 10px;
+    gap: 0.5rem;
 }
 
-.toggle-switch input:checked + .slider {
-  background: #3182ce;
+.toggle-switch input:checked+.slider {
+    background: #3182ce;
 }
 
 .edit-btn {

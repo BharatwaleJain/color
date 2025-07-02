@@ -10,7 +10,7 @@ import { createPinia } from 'pinia';
 const app = createApp(App);
 app.use(Toast, {
   transition: 'Vue-Toastification__bounce',
-  maxToasts: 3,
+  maxToasts: 1,
   newestOnTop: true,
 });
 app.use(VueSweetalert2);

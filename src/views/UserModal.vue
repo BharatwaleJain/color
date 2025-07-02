@@ -4,27 +4,28 @@
       <h2>{{ isEdit ? 'Edit User' : 'Add User' }}</h2>
       <form @submit.prevent="submitForm">
         <div class="form-row">
-          <label for="name">Name</label>
+          <label for="name">Username</label>
           <input
             id="name"
             v-model="form.name"
             type="text"
-            placeholder="Enter Full Name"
+            placeholder="Enter Unique Username"
             required
-            maxlength="50"
-            autocomplete="name"
+            maxlength="25"
+            @input="onNameInput"
+            @blur="form.name = form.name.trim()"
+            autocomplete="username"
           />
         </div>
         <div class="form-row">
-          <label for="email">Username</label>
+          <label for="email">Mail ID</label>
           <input
             id="email"
             v-model="form.username"
-            :disabled="isEdit"
             type="email"
-            placeholder="Enter Mail ID"
+            placeholder="Enter Valid Mail ID"
             required
-            maxlength="100"
+            maxlength="50"
             autocomplete="email"
           />
         </div>
@@ -51,7 +52,7 @@
               v-model="form.password"
               :disabled="isEdit"
               :type="showPassword ? 'text' : 'password'"
-              placeholder="Enter password"
+              placeholder="Enter Strong Password"
               required
               @input="validatePassword"
               maxlength="100"
@@ -118,6 +119,12 @@ const passwordHelp = ref(null)
 const showPassword = ref(false)
 let tippyInstance = null
 
+function onNameInput(e) {
+  form.name = e.target.value
+    .toLowerCase()
+    .replace(/[^a-z0-9]/gi, '');
+}
+
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
 }
@@ -164,10 +171,10 @@ watch(
 function isStrongPassword(pw) {
   return (
     pw.length >= 8 &&
-    /[a-z]/.test(pw) &&      // lowercase
-    /[A-Z]/.test(pw) &&      // uppercase
-    /\d/.test(pw) &&         // number
-    /[^A-Za-z0-9]/.test(pw)  // symbol
+    /[a-z]/.test(pw) &&
+    /[A-Z]/.test(pw) &&
+    /\d/.test(pw) &&
+    /[^A-Za-z0-9]/.test(pw)
   );
 }
 
@@ -182,13 +189,18 @@ function validatePassword() {
 function submitForm() {
   error.value = '';
 
-  // Name max 50 chars
-  if (!form.name || form.name.length > 50) {
-    error.value = 'Name is required and must be at most 50 characters';
+  // Username max 25 chars
+  if (!form.name || form.name.length > 25) {
+    error.value = 'Username is required and must be at most 25 characters';
+    return;
+  }
+  if (!/^[a-z0-9]+$/.test(form.name)) {
+    error.value = 'Username can only contain lowercase letters and numbers, no spaces or special characters';
     return;
   }
 
-  // Username must be a valid email
+
+  // Must be a valid email
   if (!form.username || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.username)) {
     error.value = 'Username must be a valid email';
     return;

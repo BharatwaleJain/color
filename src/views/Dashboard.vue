@@ -86,7 +86,9 @@
               <span class="item-title">Title</span>
               <span class="item-date">Created At</span>
               <span class="item-date">Updated At</span>
-              <span>Assigned to</span>
+              <span class="item-assigned">Assigned to</span>
+              <span>Edit Task</span>
+              <span>Delete Task</span>
             </div>
           </div>
           <div v-for="(item, index) in list" :key="item.id || index" class="list-item">
@@ -172,7 +174,7 @@ const route = useRoute()
 const toast = useToast();
 const toastOptions = {
   position: 'top-right',
-  timeout: 3000,
+  timeout: 2000,
   closeOnClick: true,
   pauseOnFocusLoss: true,
   pauseOnHover: true,
@@ -985,6 +987,10 @@ input.date-picker.flatpickr-input:hover {
 
 .item-date {
   width: 8rem;
+}
+
+.item-assigned {
+  width: 13.5rem;
 }
 
 .item-actions {

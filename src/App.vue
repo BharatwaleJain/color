@@ -44,7 +44,7 @@ const router = useRouter();
 const toast = useToast();
 const toastOptions = {
   position: 'top-right',
-  timeout: 3000,
+  timeout: 2000,
   closeOnClick: true,
   pauseOnFocusLoss: true,
   pauseOnHover: true,
@@ -100,11 +100,11 @@ onMounted(() => {
 async function login() {
   try {
     const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-    const response = await fetch(`${apiBase}/login`, {
+    const response = await fetch(`${apiBase}/login2`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: username.value,
+        name: username.value,
         password: password.value,
       }),
     });
