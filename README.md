@@ -1,29 +1,41 @@
-# color
+# Project Frontend Setup
 
-This template should help get you started developing with Vue 3 in Vite.
+### 1. Clone the Repository
 
-## Recommended IDE Setup
+```
+git clone https://github.com/BharatwaleJain/color
+```
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+### 2. Go to the Project Directory
 
-## Customize configuration
+```
+cd color
+```
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### 3. Configure Environment Variables
 
-## Project Setup
+Create a file named `.env` in the project root and add:
 
-```sh
+```
+VITE_API_BASE=backend-url
+```
+
+You can get the backend URL from the backend repository. You can skip if you're running the backend locally.
+
+### 4. Install Dependencies
+
+```
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### 5. Start the Frontend Application
 
-```sh
+```
 npm run dev
 ```
 
-### Compile and Minify for Production
+### 6. Access the Application in Your Browser
 
-```sh
-npm run build
+```
+http://localhost:5173
 ```
